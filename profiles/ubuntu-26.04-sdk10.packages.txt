@@ -1,0 +1,11 @@
+ca-certificates
+curl
+wget
+gpg
+apt-transport-https
+software-properties-common
+openssh-server
+nginx
+sqlite3
+git
+dotnet-sdk-10.0
