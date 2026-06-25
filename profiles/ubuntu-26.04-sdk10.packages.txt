@@ -6,4 +6,4 @@ openssh-server
 nginx
 sqlite3
 git
-aspnetcore-runtime-10.0
+dotnet-sdk-10.0
