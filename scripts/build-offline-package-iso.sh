@@ -52,9 +52,10 @@ apt-get install -y --no-install-recommends \
     apt-utils
 
 mapfile -t ROOT_PACKAGES < <(
-    grep -vE '^\s*(#|$)' "$PACKAGE_LIST" |
-    sed 's/#.*//' |
-    awk '{$1=$1};1'
+    sed 's/#.*//' "$PACKAGE_LIST" |
+    tr '[:space:]' '\n' |
+    sed '/^$/d' |
+    sort -u
 )
 
 printf '%s\n' "${ROOT_PACKAGES[@]}" | sort -u > "$OUT_DIR/root-packages.txt"
@@ -66,6 +67,7 @@ echo "Resolving package dependency closure..."
         --no-conflicts \
         --no-breaks \
         --no-replaces \
+        --no-recommends \
         --no-suggests \
         --no-enhances \
         "${ROOT_PACKAGES[@]}" |
@@ -103,7 +105,7 @@ while read -r pkg; do
     [ -n "$pkg" ] || continue
 
     echo "Downloading $pkg"
-    if ! apt-get download "$pkg"; then
+    if ! apt-get -o APT::Sandbox::User=root download "$pkg"; then
         echo "$pkg" >> "$OUT_DIR/packages-download-failed.txt"
     fi
 done < "$OUT_DIR/packages-expanded.txt"
