@@ -88,7 +88,9 @@ echo "Resolving package dependency closure..."
 while read -r pkg; do
     [ -n "$pkg" ] || continue
 
-    if apt-cache show "$pkg" >/dev/null 2>&1; then
+    candidate="$(apt-cache policy "$pkg" | awk '/Candidate:/ { print $2; exit }')"
+
+    if [ -n "$candidate" ] && [ "$candidate" != "(none)" ]; then
         echo "$pkg" >> "$OUT_DIR/packages-expanded.txt"
     else
         echo "$pkg" >> "$OUT_DIR/packages-skipped.txt"
@@ -103,6 +105,14 @@ pushd "$DEBS_DIR" >/dev/null
 
 while read -r pkg; do
     [ -n "$pkg" ] || continue
+
+    candidate="$(apt-cache policy "$pkg" | awk '/Candidate:/ { print $2; exit }')"
+
+    if [ -z "$candidate" ] || [ "$candidate" = "(none)" ]; then
+        echo "Skipping virtual/no-candidate package: $pkg"
+        echo "$pkg" >> "$OUT_DIR/packages-skipped.txt"
+        continue
+    fi
 
     echo "Downloading $pkg"
     if ! apt-get -o APT::Sandbox::User=root download "$pkg"; then
