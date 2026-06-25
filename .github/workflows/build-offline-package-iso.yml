@@ -1,0 +1,62 @@
+name: Build Linux Offline Package ISO
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Package profile"
+        required: true
+        default: "sdk10"
+        type: choice
+        options:
+          - sdk10
+          - runtime10
+
+      iso_label:
+        description: "ISO volume label"
+        required: true
+        default: "EASYPKGS"
+
+      powershell_version:
+        description: "PowerShell version, empty = latest"
+        required: false
+        default: ""
+
+      posh_acme_version:
+        description: "Posh-ACME version, empty = latest"
+        required: false
+        default: ""
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build ISO in Ubuntu 26.04 container
+        shell: bash
+        run: |
+          docker run --rm \
+            -e PROFILE="${{ inputs.profile }}" \
+            -e ISO_LABEL="${{ inputs.iso_label }}" \
+            -e POWERSHELL_VERSION="${{ inputs.powershell_version }}" \
+            -e POSH_ACME_VERSION="${{ inputs.posh_acme_version }}" \
+            -v "$PWD:/work" \
+            -w /work \
+            ubuntu:26.04 \
+            bash scripts/build-offline-package-iso.sh
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: EasyUbuntu2604Packages-${{ inputs.profile }}
+          path: |
+            out/*.iso
+            out/*.sha256
+            out/*.manifest.json
+          if-no-files-found: error
